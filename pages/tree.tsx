@@ -1,6 +1,25 @@
 import ReactDOM from 'react-dom/client';
 
-import { Tree } from '../src/shared/Tree';
+import { Tree, TreeNode } from '../src/shared/Tree';
+
+const treeNode: TreeNode = {
+  children: [
+    {
+      label: 'a',
+      children: [{ label: 'c' }],
+    },
+    {
+      label: 'b',
+      children: [
+        { label: 'd', children: [{ label: 'i' }] },
+        { label: 'e', children: [{ label: 'g' }, { label: 'h' }] },
+        { label: 'f' },
+      ],
+    },
+  ],
+};
 
 const root = ReactDOM.createRoot(document.body);
-root.render(<Tree />);
+root.render(
+  <Tree root={treeNode} addNode={(id) => console.log('adding', id)} />,
+);
