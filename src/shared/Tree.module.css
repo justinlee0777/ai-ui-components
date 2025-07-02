@@ -14,14 +14,19 @@
   border: 1px solid black;
   border-radius: 50%;
   box-sizing: border-box;
+  cursor: pointer;
   display: inline-flex;
   flex: none;
   font-size: 1em;
-  height: 2em;
+  min-height: 1em;
   justify-content: center;
   line-height: 1em;
   padding: 0;
-  width: 2em;
+  min-width: 1em;
+}
+
+.nodeActivated {
+  background-color: black;
 }
 
 .nodeDepth {

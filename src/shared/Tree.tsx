@@ -1,20 +1,23 @@
 import clsx from 'clsx';
 import styles from './Tree.module.css';
 
-import { useMemo, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
+
+type NodeId = Array<{
+  position: number;
+}>;
 
 export interface TreeNode {
   label?: string;
   children?: Array<TreeNode>;
 }
 
-interface NodeId {
-  depth: number;
-  position: number;
-}
-
 interface AddNode {
   (nodeId: NodeId): void;
+}
+
+interface ActivateNode {
+  (nodes: NodeId): void;
 }
 
 interface RenderNode {
@@ -28,6 +31,16 @@ interface Props {
 
   /** TODO: Remember to focus on new node. */
   addNode?: AddNode;
+
+  activateNode?: ActivateNode;
+}
+
+function isPartOfNode(node: NodeId, path: NodeId): boolean {
+  return node.every(({ position }, i) => {
+    const node = path.at(i);
+
+    return node ? node.position === position : false;
+  });
 }
 
 export function Tree({ root, addNode, renderNode }: Props): JSX.Element {
@@ -39,12 +52,22 @@ export function Tree({ root, addNode, renderNode }: Props): JSX.Element {
     return renderNode ?? ((_, node) => <label>{node.label}</label>);
   }, [renderNode]);
 
+  const [activatedNode, setActivatedNode] = useState<NodeId | null>(null);
+
+  const activateFn: ActivateNode = useMemo(() => {
+    return (nodeIds) => {
+      setActivatedNode(nodeIds);
+    };
+  }, [setActivatedNode]);
+
   return (
     <div className={styles.tree}>
       <TreeNode
         node={root}
-        nodeId={{ depth: 0, position: 0 }}
+        nodeId={[{ position: 0 }]}
+        activatedNode={activatedNode}
         onAdd={addFn}
+        onActivate={activateFn}
         render={renderFn}
       />
     </div>
@@ -56,22 +79,40 @@ interface TreeNodeProps {
 
   nodeId: NodeId;
 
-  render: (nodeId: NodeId, node: TreeNode) => JSX.Element;
-  onAdd: (nodeId: NodeId) => void;
+  activatedNode: NodeId | null;
+
+  render: RenderNode;
+  onAdd: AddNode;
+  onActivate: ActivateNode;
 }
 
-function TreeNode({ node, nodeId, onAdd, render }: TreeNodeProps): JSX.Element {
+function TreeNode({
+  node,
+  nodeId,
+  ...passedDownProps
+}: TreeNodeProps): JSX.Element {
+  const activated =
+    passedDownProps.activatedNode &&
+    isPartOfNode(nodeId, passedDownProps.activatedNode);
+
   return (
     <div className={styles.nodeContainer}>
-      <div className={styles.node}>{render(nodeId, node)}</div>
+      <button
+        className={clsx(styles.node, {
+          [styles.nodeActivated]: activated,
+        })}
+        onClick={() => passedDownProps.onActivate(nodeId)}
+      >
+        {/*render(nodeId, node)*/}
+      </button>
       {node.children && (
         <div className={styles.children}>
           {node.children.map((child, i) => (
             <TreeNode
+              key={i}
               node={child}
-              nodeId={{ depth: nodeId.depth + 1, position: i }}
-              render={render}
-              onAdd={onAdd}
+              nodeId={nodeId.concat({ position: i })}
+              {...passedDownProps}
             />
           ))}
           {/*<button className={clsx(styles.node, styles.addNode)} onClick={() => onAdd(1, Number(node.children?.length))}>+</button>*/}
