@@ -27,6 +27,8 @@ interface RenderNode<NodeType extends TreeNode<NodeType>> {
 interface Props<NodeType extends TreeNode<NodeType>> {
   root: NodeType;
 
+  canAdd?: boolean;
+
   renderNode?: RenderNode<NodeType>;
 
   renderActivatedNode?: RenderNode<NodeType>;
@@ -47,6 +49,7 @@ function isPartOfNode(node: NodeId, path: NodeId): boolean {
 
 export function Tree<NodeType extends TreeNode<NodeType>>({
   root,
+  canAdd,
   addNode,
   renderNode,
   renderActivatedNode,
@@ -73,6 +76,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
         node={root}
         nodeId={[{ position: 0 }]}
         activatedNode={activatedNode}
+        canAdd={Boolean(canAdd)}
         onAdd={addFn}
         onActivate={activateFn}
         render={renderFn}
@@ -88,6 +92,8 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
   nodeId: NodeId;
 
   activatedNode: NodeId | null;
+
+  canAdd: boolean;
 
   render: RenderNode<NodeType>;
   renderActivated?: RenderNode<NodeType>;
@@ -120,7 +126,7 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
         })}
         onClick={() => passedDownProps.onActivate(nodeId)}
       >
-        {/*render(nodeId, node)*/}
+        {renderedContent}
       </button>
       {node.children && (
         <div className={styles.children}>
@@ -132,7 +138,20 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
               {...passedDownProps}
             />
           ))}
-          {/*<button className={clsx(styles.node, styles.addNode)} onClick={() => onAdd(1, Number(node.children?.length))}>+</button>*/}
+          {passedDownProps.canAdd && (
+            <div className={styles.nodeContainer}>
+              <button
+                className={clsx(styles.node, styles.addNode)}
+                onClick={() =>
+                  passedDownProps.onAdd(
+                    nodeId.concat({ position: Number(node.children?.length) }),
+                  )
+                }
+              >
+                <span className={styles.addNodeText}>+</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

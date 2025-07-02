@@ -28,4 +28,6 @@ const treeNode: CustomTreeNode = {
 };
 
 const root = ReactDOM.createRoot(document.body);
-root.render(<Tree root={treeNode} />);
+root.render(
+  <Tree root={treeNode} addNode={(nodeId) => console.log('adding', nodeId)} />,
+);
