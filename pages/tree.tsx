@@ -2,11 +2,19 @@ import ReactDOM from 'react-dom/client';
 
 import { Tree, TreeNode } from '../src/shared/Tree';
 
-const treeNode: TreeNode = {
+interface CustomTreeNode extends TreeNode<CustomTreeNode> {
+  // text: string;
+}
+
+const treeNode: CustomTreeNode = {
   children: [
     {
       label: 'a',
-      children: [{ label: 'c' }],
+      children: [
+        {
+          label: 'c',
+        },
+      ],
     },
     {
       label: 'b',
@@ -20,6 +28,4 @@ const treeNode: TreeNode = {
 };
 
 const root = ReactDOM.createRoot(document.body);
-root.render(
-  <Tree root={treeNode} addNode={(id) => console.log('adding', id)} />,
-);
+root.render(<Tree root={treeNode} />);

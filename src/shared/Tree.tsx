@@ -7,9 +7,9 @@ type NodeId = Array<{
   position: number;
 }>;
 
-export interface TreeNode {
+export interface TreeNode<NodeType extends TreeNode<NodeType>> {
   label?: string;
-  children?: Array<TreeNode>;
+  children?: Array<NodeType>;
 }
 
 interface AddNode {
@@ -20,14 +20,16 @@ interface ActivateNode {
   (nodes: NodeId): void;
 }
 
-interface RenderNode {
-  (nodeId: NodeId, node: TreeNode): JSX.Element;
+interface RenderNode<NodeType extends TreeNode<NodeType>> {
+  (nodeId: NodeId, node: NodeType): JSX.Element;
 }
 
-interface Props {
-  root: TreeNode;
+interface Props<NodeType extends TreeNode<NodeType>> {
+  root: NodeType;
 
-  renderNode?: RenderNode;
+  renderNode?: RenderNode<NodeType>;
+
+  renderActivatedNode?: RenderNode<NodeType>;
 
   /** TODO: Remember to focus on new node. */
   addNode?: AddNode;
@@ -43,13 +45,18 @@ function isPartOfNode(node: NodeId, path: NodeId): boolean {
   });
 }
 
-export function Tree({ root, addNode, renderNode }: Props): JSX.Element {
+export function Tree<NodeType extends TreeNode<NodeType>>({
+  root,
+  addNode,
+  renderNode,
+  renderActivatedNode,
+}: Props<NodeType>): JSX.Element {
   const addFn: AddNode = useMemo(() => {
     return addNode ?? (() => {});
   }, [addNode]);
 
-  const renderFn: RenderNode = useMemo(() => {
-    return renderNode ?? ((_, node) => <label>{node.label}</label>);
+  const renderFn: RenderNode<NodeType> = useMemo(() => {
+    return renderNode ?? (() => <></>);
   }, [renderNode]);
 
   const [activatedNode, setActivatedNode] = useState<NodeId | null>(null);
@@ -69,31 +76,41 @@ export function Tree({ root, addNode, renderNode }: Props): JSX.Element {
         onAdd={addFn}
         onActivate={activateFn}
         render={renderFn}
+        renderActivated={renderActivatedNode}
       />
     </div>
   );
 }
 
-interface TreeNodeProps {
-  node: TreeNode;
+interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
+  node: NodeType;
 
   nodeId: NodeId;
 
   activatedNode: NodeId | null;
 
-  render: RenderNode;
+  render: RenderNode<NodeType>;
+  renderActivated?: RenderNode<NodeType>;
   onAdd: AddNode;
   onActivate: ActivateNode;
 }
 
-function TreeNode({
+function TreeNode<NodeType extends TreeNode<NodeType>>({
   node,
   nodeId,
   ...passedDownProps
-}: TreeNodeProps): JSX.Element {
+}: TreeNodeProps<NodeType>): JSX.Element {
   const activated =
     passedDownProps.activatedNode &&
     isPartOfNode(nodeId, passedDownProps.activatedNode);
+
+  let renderedContent: JSX.Element | undefined;
+
+  if (activated && passedDownProps.renderActivated) {
+    renderedContent = passedDownProps.renderActivated(nodeId, node);
+  } else {
+    renderedContent = passedDownProps.render(nodeId, node);
+  }
 
   return (
     <div className={styles.nodeContainer}>
