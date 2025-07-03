@@ -3,13 +3,16 @@ import styles from './Tree.module.css';
 
 import { useMemo, useState, type JSX } from 'react';
 
-type NodeId = Array<{
+export type NodeId = Array<{
   position: number;
 }>;
 
 export interface TreeNode<NodeType extends TreeNode<NodeType>> {
-  label?: string;
   children?: Array<NodeType>;
+}
+
+interface Classes<NodeType extends TreeNode<NodeType>> {
+  node: (nodeId: NodeId, node: NodeType) => string;
 }
 
 interface AddNode {
@@ -20,18 +23,25 @@ interface ActivateNode {
   (nodes: NodeId): void;
 }
 
+interface NodeState {
+  activated: {
+    partial: boolean;
+    exact: boolean;
+  };
+}
+
 interface RenderNode<NodeType extends TreeNode<NodeType>> {
-  (nodeId: NodeId, node: NodeType): JSX.Element;
+  (nodeId: NodeId, node: NodeType, state: NodeState): JSX.Element;
 }
 
 interface Props<NodeType extends TreeNode<NodeType>> {
   root: NodeType;
 
+  classes?: Classes<NodeType>;
+
   canAdd?: boolean;
 
   renderNode?: RenderNode<NodeType>;
-
-  renderActivatedNode?: RenderNode<NodeType>;
 
   /** TODO: Remember to focus on new node. */
   addNode?: AddNode;
@@ -47,12 +57,20 @@ function isPartOfNode(node: NodeId, path: NodeId): boolean {
   });
 }
 
+function isNode(node: NodeId, path: NodeId): boolean {
+  if (node.length !== path.length) {
+    return false;
+  }
+
+  return isPartOfNode(node, path);
+}
+
 export function Tree<NodeType extends TreeNode<NodeType>>({
   root,
   canAdd,
+  classes,
   addNode,
   renderNode,
-  renderActivatedNode,
 }: Props<NodeType>): JSX.Element {
   const addFn: AddNode = useMemo(() => {
     return addNode ?? (() => {});
@@ -62,6 +80,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
     return renderNode ?? (() => <></>);
   }, [renderNode]);
 
+  /** TODO: Move out of component. */
   const [activatedNode, setActivatedNode] = useState<NodeId | null>(null);
 
   const activateFn: ActivateNode = useMemo(() => {
@@ -73,6 +92,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
   return (
     <div className={styles.tree}>
       <TreeNode
+        classes={classes}
         node={root}
         nodeId={[{ position: 0 }]}
         activatedNode={activatedNode}
@@ -80,7 +100,6 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
         onAdd={addFn}
         onActivate={activateFn}
         render={renderFn}
-        renderActivated={renderActivatedNode}
       />
     </div>
   );
@@ -96,9 +115,10 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
   canAdd: boolean;
 
   render: RenderNode<NodeType>;
-  renderActivated?: RenderNode<NodeType>;
   onAdd: AddNode;
   onActivate: ActivateNode;
+
+  classes?: Classes<NodeType>;
 }
 
 function TreeNode<NodeType extends TreeNode<NodeType>>({
@@ -106,24 +126,30 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
   nodeId,
   ...passedDownProps
 }: TreeNodeProps<NodeType>): JSX.Element {
-  const activated =
-    passedDownProps.activatedNode &&
-    isPartOfNode(nodeId, passedDownProps.activatedNode);
+  let partiallyActivated = false,
+    exactActivated = false;
 
-  let renderedContent: JSX.Element | undefined;
+  if (passedDownProps.activatedNode) {
+    partiallyActivated = isPartOfNode(nodeId, passedDownProps.activatedNode);
 
-  if (activated && passedDownProps.renderActivated) {
-    renderedContent = passedDownProps.renderActivated(nodeId, node);
-  } else {
-    renderedContent = passedDownProps.render(nodeId, node);
+    exactActivated = isNode(nodeId, passedDownProps.activatedNode);
   }
+
+  const renderedContent = passedDownProps.render(nodeId, node, {
+    activated: { partial: partiallyActivated, exact: exactActivated },
+  });
 
   return (
     <div className={styles.nodeContainer}>
       <button
-        className={clsx(styles.node, {
-          [styles.nodeActivated]: activated,
-        })}
+        className={clsx(
+          styles.node,
+          passedDownProps.classes?.node(nodeId, node),
+          {
+            [styles.nodeActivated]: partiallyActivated,
+            [styles.nodeExact]: exactActivated,
+          },
+        )}
         onClick={() => passedDownProps.onActivate(nodeId)}
       >
         {renderedContent}

@@ -3,6 +3,57 @@
   <head>
     <meta charset="UTF-8" />
     <title>Dev</title>
+    <style>
+      .customRootNode {
+        max-width: 50vw;
+      }
+
+      .customTreeNode:not(.customRootNode) {
+        width: 100%;
+      }
+
+      .customTreeNode:not(.customTitleNode) {
+        cursor: pointer;
+      }
+
+      .nodeLabel {
+        font-size: 12px;
+        white-space: 'pre-wrap';
+      }
+
+      .tree .node {
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 50%;
+        flex-direction: column;
+        transition-duration: 0.3s;
+        transition-property: border-radius, height, width;
+      }
+
+      .tree .node.customTitleNode {
+        background-color: black;
+        color: white;
+      }
+
+      .tree img {
+        border-radius: 50%;
+        max-width: 70%;
+      }
+
+      .tree .node.nodeExact {
+        border-radius: 0;
+      }
+
+      @media (max-width: 600px) {
+        .node {
+          font-size: 10px;
+        }
+
+        .tree .children {
+          gap: 0.5em;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

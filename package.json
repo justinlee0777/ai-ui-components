@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "start": "vite",
+    "start": "vite --config ./vite.config.dev.js",
     "format": "prettier -w ."
   },
   "devDependencies": {
