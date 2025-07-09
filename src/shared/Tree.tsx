@@ -1,11 +1,22 @@
 import clsx from 'clsx';
 import styles from './Tree.module.css';
 
-import { useMemo, useState, type JSX } from 'react';
+import { useMemo, type JSX } from 'react';
+
+export const DO_NOT_RENDER = Symbol(
+  'A symbol denoting that the tree should not render the node at all.',
+);
 
 export type NodeId = Array<{
   position: number;
 }>;
+
+// Figure out how to hide nodes intelligently based on viewport size
+// This actually might be easier just to pass to the client i.e. when to render node
+// Or, allow the client to configure at which breakpoints to render / not render a node
+
+// OR, only show the first two levels and show further levels when its specific parent has been expanded.
+// Another idea is, only show the path to the activated node, do not show extraneous nodes
 
 export interface TreeNode<NodeType extends TreeNode<NodeType>> {
   children?: Array<NodeType>;
@@ -19,8 +30,8 @@ interface AddNode {
   (nodeId: NodeId): void;
 }
 
-interface ActivateNode {
-  (nodes: NodeId): void;
+interface ActivateNode<NodeType extends TreeNode<NodeType>> {
+  (nodes: NodeId, node: NodeType): void;
 }
 
 interface NodeState {
@@ -31,11 +42,13 @@ interface NodeState {
 }
 
 interface RenderNode<NodeType extends TreeNode<NodeType>> {
-  (nodeId: NodeId, node: NodeType, state: NodeState): JSX.Element;
+  (nodeId: NodeId, node: NodeType, state: NodeState): JSX.Element | Symbol;
 }
 
 interface Props<NodeType extends TreeNode<NodeType>> {
   root: NodeType;
+
+  activatedNode?: NodeId;
 
   classes?: Classes<NodeType>;
 
@@ -46,7 +59,7 @@ interface Props<NodeType extends TreeNode<NodeType>> {
   /** TODO: Remember to focus on new node. */
   addNode?: AddNode;
 
-  activateNode?: ActivateNode;
+  activateNode?: ActivateNode<NodeType>;
 }
 
 function isPartOfNode(node: NodeId, path: NodeId): boolean {
@@ -69,8 +82,10 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
   root,
   canAdd,
   classes,
+  activatedNode,
   addNode,
   renderNode,
+  activateNode,
 }: Props<NodeType>): JSX.Element {
   const addFn: AddNode = useMemo(() => {
     return addNode ?? (() => {});
@@ -79,15 +94,6 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
   const renderFn: RenderNode<NodeType> = useMemo(() => {
     return renderNode ?? (() => <></>);
   }, [renderNode]);
-
-  /** TODO: Move out of component. */
-  const [activatedNode, setActivatedNode] = useState<NodeId | null>(null);
-
-  const activateFn: ActivateNode = useMemo(() => {
-    return (nodeIds) => {
-      setActivatedNode(nodeIds);
-    };
-  }, [setActivatedNode]);
 
   return (
     <div className={styles.tree}>
@@ -98,7 +104,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
         activatedNode={activatedNode}
         canAdd={Boolean(canAdd)}
         onAdd={addFn}
-        onActivate={activateFn}
+        onActivate={activateNode}
         render={renderFn}
       />
     </div>
@@ -110,13 +116,13 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
 
   nodeId: NodeId;
 
-  activatedNode: NodeId | null;
+  activatedNode?: NodeId;
 
   canAdd: boolean;
 
   render: RenderNode<NodeType>;
   onAdd: AddNode;
-  onActivate: ActivateNode;
+  onActivate?: ActivateNode<NodeType>;
 
   classes?: Classes<NodeType>;
 }
@@ -139,6 +145,10 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
     activated: { partial: partiallyActivated, exact: exactActivated },
   });
 
+  if (renderedContent === DO_NOT_RENDER) {
+    return <></>;
+  }
+
   return (
     <div className={styles.nodeContainer}>
       <button
@@ -150,9 +160,9 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
             [styles.nodeExact]: exactActivated,
           },
         )}
-        onClick={() => passedDownProps.onActivate(nodeId)}
+        onClick={() => passedDownProps.onActivate?.(nodeId, node)}
       >
-        {renderedContent}
+        {renderedContent as JSX.Element}
       </button>
       {node.children && (
         <div className={styles.children}>
