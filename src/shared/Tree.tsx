@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import styles from './Tree.module.css';
 
-import { useMemo, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 
 export const DO_NOT_RENDER = Symbol(
   'A symbol denoting that the tree should not render the node at all.',
@@ -48,6 +48,8 @@ interface RenderNode<NodeType extends TreeNode<NodeType>> {
 interface Props<NodeType extends TreeNode<NodeType>> {
   root: NodeType;
 
+  mobileMediaQuery?: string;
+
   activatedNode?: NodeId;
 
   classes?: Classes<NodeType>;
@@ -82,6 +84,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
   root,
   canAdd,
   classes,
+  mobileMediaQuery,
   activatedNode,
   addNode,
   renderNode,
@@ -95,12 +98,30 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
     return renderNode ?? (() => <></>);
   }, [renderNode]);
 
+  const [mobileView, setMobileView] = useState(false);
+
+  useEffect(() => {
+    if (mobileMediaQuery) {
+      const mql = window.matchMedia(mobileMediaQuery);
+      const handleChange = () => setMobileView(mql.matches);
+
+      handleChange();
+      mql.addEventListener('change', handleChange);
+      return () => mql.removeEventListener('change', handleChange);
+    }
+  }, [mobileMediaQuery]);
+
   return (
-    <div className={styles.tree}>
+    <div
+      className={clsx(styles.tree, {
+        [styles.mobileView]: mobileView,
+      })}
+    >
       <TreeNode
         classes={classes}
         node={root}
         nodeId={[{ position: 0 }]}
+        lastChild
         activatedNode={activatedNode}
         canAdd={Boolean(canAdd)}
         onAdd={addFn}
@@ -120,6 +141,8 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
 
   canAdd: boolean;
 
+  lastChild: boolean;
+
   render: RenderNode<NodeType>;
   onAdd: AddNode;
   onActivate?: ActivateNode<NodeType>;
@@ -130,6 +153,7 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
 function TreeNode<NodeType extends TreeNode<NodeType>>({
   node,
   nodeId,
+  lastChild,
   ...passedDownProps
 }: TreeNodeProps<NodeType>): JSX.Element {
   let partiallyActivated = false,
@@ -148,9 +172,20 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
   if (renderedContent === DO_NOT_RENDER) {
     return <></>;
   }
+  const firstChild = nodeId.at(-1)!.position === 0;
 
   return (
-    <div className={styles.nodeContainer}>
+    <div
+      className={clsx(styles.nodeContainer, {
+        [styles.firstNode]: firstChild,
+        [styles.lastNode]: lastChild,
+      })}
+    >
+      <div className={clsx(styles.children, styles.lines)}>
+        <div className={styles.horizontalLine}></div>
+        <div className={styles.horizontalLine}></div>
+      </div>
+      {nodeId.length > 1 && <div className={styles.verticalLine}></div>}
       <button
         className={clsx(
           styles.node,
@@ -165,30 +200,38 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
         {renderedContent as JSX.Element}
       </button>
       {node.children && (
-        <div className={styles.children}>
-          {node.children.map((child, i) => (
-            <TreeNode
-              key={i}
-              node={child}
-              nodeId={nodeId.concat({ position: i })}
-              {...passedDownProps}
-            />
-          ))}
-          {passedDownProps.canAdd && (
-            <div className={styles.nodeContainer}>
-              <button
-                className={clsx(styles.node, styles.addNode)}
-                onClick={() =>
-                  passedDownProps.onAdd(
-                    nodeId.concat({ position: Number(node.children?.length) }),
-                  )
-                }
-              >
-                <span className={styles.addNodeText}>+</span>
-              </button>
-            </div>
+        <>
+          {node.children.length > 1 && (
+            <div className={styles.verticalLine}></div>
           )}
-        </div>
+          <div className={styles.children}>
+            {node.children.map((child, i) => (
+              <TreeNode
+                key={i}
+                node={child}
+                nodeId={nodeId.concat({ position: i })}
+                lastChild={i === node.children!.length - 1}
+                {...passedDownProps}
+              />
+            ))}
+            {passedDownProps.canAdd && (
+              <div className={styles.nodeContainer}>
+                <button
+                  className={clsx(styles.node, styles.addNode)}
+                  onClick={() =>
+                    passedDownProps.onAdd(
+                      nodeId.concat({
+                        position: Number(node.children?.length),
+                      }),
+                    )
+                  }
+                >
+                  <span className={styles.addNodeText}>+</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

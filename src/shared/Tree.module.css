@@ -3,14 +3,18 @@
 
 .nodeContainer {
   align-items: center;
+  box-sizing: border-box;
   display: inline-flex;
-  flex: none;
   flex-direction: column;
-  gap: 1em;
 }
 
 .nodeContainer > * {
   min-width: 0;
+}
+
+.nodeContainer.firstNode > .lines > .horizontalLine:first-of-type,
+.nodeContainer.lastNode > .lines > .horizontalLine:last-of-type {
+  opacity: 0;
 }
 
 .node {
@@ -20,7 +24,9 @@
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
+  flex-direction: row;
   justify-content: center;
+  margin: 0 0.5em;
   padding: 0;
 }
 
@@ -46,6 +52,32 @@
 .children {
   display: flex;
   flex-direction: row;
-  gap: 1em;
   width: 100%;
+}
+
+.children > * {
+  flex: 1;
+}
+
+.lines {
+  gap: 0 !important;
+}
+
+.horizontalLine {
+  border-top: 1px solid black;
+}
+
+.verticalLine {
+  border-right: 1px solid black;
+  flex: none;
+  height: 1em;
+}
+
+.tree.mobileView .node,
+.tree.mobileView .children {
+  flex-direction: column;
+}
+
+.tree.mobileView .nodeContainer {
+  flex-direction: row;
 }

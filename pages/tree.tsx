@@ -177,6 +177,7 @@ function App(): JSX.Element {
     <>
       <Tree
         root={treeNode}
+        mobileMediaQuery="(max-width: 768px)"
         classes={{
           node: (nodeId, node) =>
             clsx('customTreeNode', {
