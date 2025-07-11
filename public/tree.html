@@ -18,6 +18,15 @@
         cursor: pointer;
       }
 
+      .tree {
+        box-sizing: border-box;
+        flex: 2;
+        height: 100vh;
+        min-width: 0;
+        overflow: auto;
+        padding: 1em;
+      }
+
       .tree .node {
         background-color: white;
         border: 1px solid black;
@@ -48,8 +57,10 @@
         color: white;
       }
 
-      .tree img {
+      img {
+        display: block;
         border-radius: 50%;
+        margin: auto;
         max-width: 70%;
       }
 

@@ -2,7 +2,7 @@ import ReactDOM from 'react-dom/client';
 
 import { type NodeId, Tree, type TreeNode } from '../src/shared/Tree';
 import clsx from 'clsx';
-import { useMemo, useState, type JSX } from 'react';
+import { act, useMemo, useState, type JSX } from 'react';
 import { Tooltip } from 'react-tooltip';
 
 interface CustomTreeNode extends TreeNode<CustomTreeNode> {
@@ -169,12 +169,29 @@ const treeNode: CustomTreeNode = {
 const root = ReactDOM.createRoot(document.body);
 
 function App(): JSX.Element {
-  const [activatedNode, setActivatedNode] = useState<NodeId | undefined>();
+  const [activatedNodeId, setActivatedNodeId] = useState<NodeId | undefined>();
 
   const tooltipId = useMemo(() => `node-tooltip`, []);
 
+  let activatedNode: CustomTreeNode | undefined;
+
+  if (activatedNodeId) {
+    let nodes = [treeNode];
+
+    activatedNodeId.forEach(({ position }) => {
+      activatedNode = nodes.at(position)!;
+
+      nodes = activatedNode.children ?? [];
+    });
+  }
+
   return (
-    <>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+      }}
+    >
       <Tree
         root={treeNode}
         mobileMediaQuery="(max-width: 768px)"
@@ -185,23 +202,16 @@ function App(): JSX.Element {
               customTitleNode: !Boolean(node.text),
             }),
         }}
-        activatedNode={activatedNode}
+        activatedNode={activatedNodeId}
         renderNode={(path, node, { activated: { partial, exact } }) => {
           const treeDepth = path.length,
             deepIntoTree = path.length > 3,
             immediateChild =
-              activatedNode?.every(
+              activatedNodeId?.every(
                 (node, i) => node.position === path.at(i)?.position,
-              ) && activatedNode.length + 1 === treeDepth;
+              ) && activatedNodeId.length + 1 === treeDepth;
 
-          if (exact) {
-            return (
-              <>
-                <p>{node.text}</p>
-                {node.imageUrl && <img src={node.imageUrl} />}
-              </>
-            );
-          } else if (deepIntoTree && !(partial || immediateChild)) {
+          if (deepIntoTree && !(partial || immediateChild)) {
             return (
               <div
                 data-tooltip-id={tooltipId}
@@ -215,7 +225,7 @@ function App(): JSX.Element {
         }}
         activateNode={(nodeId, node) => {
           if (node.text) {
-            setActivatedNode(nodeId);
+            setActivatedNodeId(nodeId);
           }
         }}
       />
@@ -224,7 +234,22 @@ function App(): JSX.Element {
         place="right"
         style={{ backgroundColor: '#0f0f0f' }}
       />
-    </>
+      <div
+        style={{
+          flex: '1',
+          minWidth: 0,
+          padding: '1em',
+          textIndent: '2em',
+        }}
+      >
+        {activatedNode && (
+          <>
+            <p>{activatedNode.text}</p>
+            {activatedNode.imageUrl && <img src={activatedNode.imageUrl} />}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
