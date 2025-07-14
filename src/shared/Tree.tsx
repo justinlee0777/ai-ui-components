@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import styles from './Tree.module.css';
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
+import { MdAdd } from 'react-icons/md';
 
 export const DO_NOT_RENDER = Symbol(
   'A symbol denoting that the tree should not render the node at all.',
@@ -45,6 +46,10 @@ interface RenderNode<NodeType extends TreeNode<NodeType>> {
   (nodeId: NodeId, node: NodeType, state: NodeState): JSX.Element | Symbol;
 }
 
+type CanAddValue<NodeType extends TreeNode<NodeType>> =
+  | boolean
+  | ((nodeId: NodeId, node: NodeType) => boolean);
+
 interface Props<NodeType extends TreeNode<NodeType>> {
   root: NodeType;
 
@@ -54,7 +59,7 @@ interface Props<NodeType extends TreeNode<NodeType>> {
 
   classes?: Classes<NodeType>;
 
-  canAdd?: boolean;
+  canAdd?: CanAddValue<NodeType>;
 
   renderNode?: RenderNode<NodeType>;
 
@@ -123,7 +128,7 @@ export function Tree<NodeType extends TreeNode<NodeType>>({
         nodeId={[{ position: 0 }]}
         lastChild
         activatedNode={activatedNode}
-        canAdd={Boolean(canAdd)}
+        canAdd={canAdd ?? false}
         onAdd={addFn}
         onActivate={activateNode}
         render={renderFn}
@@ -139,7 +144,7 @@ interface TreeNodeProps<NodeType extends TreeNode<NodeType>> {
 
   activatedNode?: NodeId;
 
-  canAdd: boolean;
+  canAdd: CanAddValue<NodeType>;
 
   lastChild: boolean;
 
@@ -174,6 +179,18 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
   }
   const firstChild = nodeId.at(-1)!.position === 0;
 
+  const nodeClasses = passedDownProps.classes?.node(nodeId, node);
+
+  let canAdd: boolean;
+
+  if (passedDownProps.canAdd === true) {
+    canAdd = true;
+  } else if (typeof passedDownProps.canAdd === 'function') {
+    canAdd = passedDownProps.canAdd(nodeId, node);
+  } else {
+    canAdd = false;
+  }
+
   return (
     <div
       className={clsx(styles.nodeContainer, {
@@ -186,19 +203,16 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
         <div className={styles.horizontalLine}></div>
       </div>
       {nodeId.length > 1 && <div className={styles.verticalLine}></div>}
-      <button
-        className={clsx(
-          styles.node,
-          passedDownProps.classes?.node(nodeId, node),
-          {
-            [styles.nodeActivated]: partiallyActivated,
-            [styles.nodeExact]: exactActivated,
-          },
-        )}
+      <div
+        role="button"
+        className={clsx(styles.node, nodeClasses, {
+          [styles.nodeActivated]: partiallyActivated,
+          [styles.nodeExact]: exactActivated,
+        })}
         onClick={() => passedDownProps.onActivate?.(nodeId, node)}
       >
         {renderedContent as JSX.Element}
-      </button>
+      </div>
       {node.children && (
         <>
           {node.children.length > 1 && (
@@ -214,10 +228,10 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
                 {...passedDownProps}
               />
             ))}
-            {passedDownProps.canAdd && (
-              <div className={styles.nodeContainer}>
-                <button
-                  className={clsx(styles.node, styles.addNode)}
+            {canAdd && (
+              <div className={styles.nodeContainer} role="button">
+                <div
+                  className={clsx(styles.node, nodeClasses, styles.addNode)}
                   onClick={() =>
                     passedDownProps.onAdd(
                       nodeId.concat({
@@ -226,8 +240,8 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
                     )
                   }
                 >
-                  <span className={styles.addNodeText}>+</span>
-                </button>
+                  <MdAdd className={styles.addNodeText} />
+                </div>
               </div>
             )}
           </div>
