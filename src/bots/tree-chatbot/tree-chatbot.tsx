@@ -4,13 +4,13 @@ import { JSX, useEffect, useMemo, useState } from 'react';
 import { MdArrowUpward } from 'react-icons/md';
 import cloneDeep from 'lodash-es/cloneDeep';
 
-import { Tree, TreeNode } from '../../shared/Tree';
+import { NodeId, Tree, TreeNode } from '../../shared/Tree';
 import clsx from 'clsx';
 
 export interface MessageTreeNode extends TreeNode<MessageTreeNode> {
   message?: {
-    role: 'user' | 'system';
-    content: string;
+    query: string;
+    answer: string;
   };
 
   /** Internal only. */
@@ -20,7 +20,11 @@ export interface MessageTreeNode extends TreeNode<MessageTreeNode> {
 interface Props {
   root?: MessageTreeNode;
 
-  sendMessage?: (nodes: Array<MessageTreeNode>, input: string) => void;
+  sendMessage?: (
+    nodes: Array<MessageTreeNode>,
+    input: string,
+    nodeId: NodeId,
+  ) => void;
 }
 
 export function TreeChatbot({ root, sendMessage }: Props): JSX.Element {
@@ -66,14 +70,14 @@ export function TreeChatbot({ root, sendMessage }: Props): JSX.Element {
         while (nodeId.length > 0) {
           const { position } = nodeId.shift()!;
 
-          nodes = nodes![position].children!;
+          nodes = nodes![position].children! ||= [];
         }
 
         nodes.splice(positionToAdd.position, 0, { openChat: true });
 
         setTrueRoot(cloneDeep(trueRoot));
       }}
-      activateNode={(nodeId, node) => {
+      activateNode={(_, node) => {
         if (node.openChat) {
         } else {
         }
@@ -102,7 +106,11 @@ export function TreeChatbot({ root, sendMessage }: Props): JSX.Element {
                   'input',
                 ) as string;
 
-                sendMessage?.(relevantNodes.slice(1, -1), input);
+                sendMessage?.(
+                  relevantNodes.slice(1, -1),
+                  input,
+                  nodeId.slice(1, -1),
+                );
               }}
             >
               <textarea name="input" />
@@ -110,6 +118,14 @@ export function TreeChatbot({ root, sendMessage }: Props): JSX.Element {
                 <MdArrowUpward />
               </button>
             </form>
+          );
+        } else if (node.message) {
+          // SHOW ANSWER ON EXPANSION INSTEAD
+          return (
+            <div>
+              <p className={styles.chatNodeQuery}>{node.message.query}</p>
+              <p>{node.message.answer}</p>
+            </div>
           );
         } else {
           return <></>;

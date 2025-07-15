@@ -213,40 +213,44 @@ function TreeNode<NodeType extends TreeNode<NodeType>>({
       >
         {renderedContent as JSX.Element}
       </div>
-      {node.children && (
-        <>
-          {node.children.length > 1 && (
-            <div className={styles.verticalLine}></div>
-          )}
-          <div className={styles.children}>
-            {node.children.map((child, i) => (
-              <TreeNode
-                key={i}
-                node={child}
-                nodeId={nodeId.concat({ position: i })}
-                lastChild={i === node.children!.length - 1}
-                {...passedDownProps}
-              />
-            ))}
-            {canAdd && (
-              <div className={styles.nodeContainer} role="button">
-                <div
-                  className={clsx(styles.node, nodeClasses, styles.addNode)}
-                  onClick={() =>
-                    passedDownProps.onAdd(
-                      nodeId.concat({
-                        position: Number(node.children?.length),
-                      }),
-                    )
-                  }
-                >
-                  <MdAdd className={styles.addNodeText} />
-                </div>
-              </div>
-            )}
-          </div>
-        </>
+      {(node.children?.length ?? 0) > 1 && (
+        <div className={styles.verticalLine}></div>
       )}
+      <div className={styles.children}>
+        {node.children?.map((child, i) => (
+          <TreeNode
+            key={i}
+            node={child}
+            nodeId={nodeId.concat({ position: i })}
+            lastChild={i === node.children!.length - 1}
+            {...passedDownProps}
+          />
+        ))}
+        {canAdd && (
+          <>
+            <div className={styles.nodeContainer}>
+              <div className={clsx(styles.children, styles.lines)}>
+                <div className={styles.horizontalLine}></div>
+                <div className={styles.horizontalLine}></div>
+              </div>
+              <div className={styles.verticalLine}></div>
+              <div
+                className={clsx(styles.node, nodeClasses, styles.addNode)}
+                role="button"
+                onClick={() =>
+                  passedDownProps.onAdd(
+                    nodeId.concat({
+                      position: Number(node.children?.length),
+                    }),
+                  )
+                }
+              >
+                <MdAdd className={styles.addNodeText} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
