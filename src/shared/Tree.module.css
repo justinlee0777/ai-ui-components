@@ -40,15 +40,6 @@
 .nodeExact {
 }
 
-.addNode {
-  cursor: pointer;
-}
-
-.addNodeText {
-  font-size: 12px;
-  line-height: 1;
-}
-
 .children {
   display: flex;
   flex-direction: row;
