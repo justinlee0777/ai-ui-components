@@ -24,6 +24,20 @@ function App(): JSX.Element {
     children: [
       {
         message: {
+          query: 'Can it toast hot dogs?',
+          answer: `No, React is a JavaScript library used in web development. It doesn't have physical attributes or capabilities to toast hot dogs. It is not related to cooking or kitchen appliances. It's for building user interfaces on websites.`,
+        },
+        children: [
+          {
+            message: {
+              query: `What CAN toast hot dogs?`,
+              answer: `You can toast hot dogs on a variety of appliances including a grill, stove, oven, toaster oven, or even over an open fire. Some specialized devices include a hot dog toaster or hot dog roller grill. Always remember, no matter how you cook them, to ensure the hot dogs are thoroughly heated and cooked to safe temperatures.`,
+            },
+          },
+        ],
+      },
+      {
+        message: {
           query: 'Why is it so popular?',
           answer: `React has gained popularity for a number of reasons:
 
@@ -106,14 +120,7 @@ In summary, React’s workflow enables developers to efficiently manage and orga
           for await (const event of response) {
             finalMessage += event.choices.at(0)!.delta.content ?? '';
 
-            let searchNodes = [tree!],
-              foundNode = tree!;
-
-            nodeId.forEach(({ position }) => {
-              foundNode = searchNodes[position]!;
-
-              searchNodes = foundNode.children!;
-            });
+            let treeVar = tree;
 
             const newNode: MessageTreeNode = {
               message: {
@@ -122,10 +129,23 @@ In summary, React’s workflow enables developers to efficiently manage and orga
               },
             };
 
-            foundNode.children![foundNode.children!.length - 1] = newNode;
+            if (tree) {
+              let searchNodes = [tree],
+                foundNode = tree;
+
+              nodeId.forEach(({ position }) => {
+                foundNode = searchNodes[position]!;
+
+                searchNodes = foundNode.children!;
+              });
+
+              foundNode.children![foundNode.children!.length - 1] = newNode;
+            } else {
+              treeVar = newNode;
+            }
 
             setActivatedNode(newNode);
-            setTree(cloneDeep(tree));
+            setTree(cloneDeep(treeVar));
           }
         }}
       />

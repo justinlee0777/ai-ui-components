@@ -45,7 +45,7 @@ export function TreeChatbot({
   sendMessage,
 }: Props): JSX.Element {
   const createTrueRoot = useMemo(
-    () => (proposedRoot: MessageTreeNode | undefined) => {
+    () => (proposedRoot: MessageTreeNode) => {
       const topLevel = [proposedRoot].filter(Boolean) as Array<MessageTreeNode>;
 
       let treeNodes = [...topLevel];
@@ -73,16 +73,16 @@ export function TreeChatbot({
         }
       }
 
-      return {
-        children: topLevel,
-      };
+      return proposedRoot;
     },
     [],
   );
 
-  const [trueRoot, setTrueRoot] = useState<MessageTreeNode>(() =>
-    createTrueRoot(root),
-  );
+  const [trueRoot, setTrueRoot] = useState<MessageTreeNode | undefined>(() => {
+    if (root) {
+      return createTrueRoot(root);
+    }
+  });
 
   const forceTreeUpdate = useMemo(
     () => () => {
@@ -94,128 +94,186 @@ export function TreeChatbot({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setTrueRoot(() => createTrueRoot(root));
+    setTrueRoot(() => {
+      if (root) {
+        return createTrueRoot(root);
+      }
+    });
   }, [root]);
 
-  return (
-    <Tree<MessageTreeNode>
-      root={trueRoot}
-      classes={{
-        node: (_, node) => {
-          return clsx(styles.chatNode, {
-            [styles.chatFormNode]:
-              node.state === MessageTreeNodeState.OPEN_CHAT,
-            [styles.addNode]: node.state === MessageTreeNodeState.ADD,
-            [styles.disabled]: submitting,
+  if (!trueRoot) {
+    return (
+      <ChatForm
+        nodeId={[]}
+        node={{}}
+        trueRoot={{}}
+        setSubmitting={setSubmitting}
+        submitting={submitting}
+        sendMessage={sendMessage}
+        forceTreeUpdate={forceTreeUpdate}
+      />
+    );
+  } else {
+    return (
+      <Tree<MessageTreeNode>
+        root={trueRoot}
+        classes={{
+          node: (_, node) => {
+            return clsx(styles.chatNode, {
+              [styles.chatFormNode]:
+                node.state === MessageTreeNodeState.OPEN_CHAT,
+              [styles.addNode]: node.state === MessageTreeNodeState.ADD,
+              [styles.disabled]: submitting,
+            });
+          },
+        }}
+        addNode={(nodeId) => {
+          let nodes = [trueRoot];
+          const positionToAdd = nodeId.pop()!;
+
+          while (nodeId.length > 0) {
+            const { position } = nodeId.shift()!;
+
+            nodes = nodes![position].children! ||= [];
+          }
+
+          nodes.splice(positionToAdd.position, 0, {
+            state: MessageTreeNodeState.OPEN_CHAT,
           });
-        },
-      }}
-      addNode={(nodeId) => {
-        let nodes = [trueRoot];
-        const positionToAdd = nodeId.pop()!;
-
-        while (nodeId.length > 0) {
-          const { position } = nodeId.shift()!;
-
-          nodes = nodes![position].children! ||= [];
-        }
-
-        nodes.splice(positionToAdd.position, 0, {
-          state: MessageTreeNodeState.OPEN_CHAT,
-        });
-
-        forceTreeUpdate();
-      }}
-      activateNode={(_, node) => {
-        if (submitting) {
-          return;
-        }
-        if (node.state === MessageTreeNodeState.ADD) {
-          node.state = MessageTreeNodeState.OPEN_CHAT;
 
           forceTreeUpdate();
-        } else if (!node.state) {
-          expandMessageNode?.(node);
+        }}
+        activateNode={(_, node) => {
+          if (submitting) {
+            return;
+          }
+          if (node.state === MessageTreeNodeState.ADD) {
+            node.state = MessageTreeNodeState.OPEN_CHAT;
+
+            forceTreeUpdate();
+          } else if (!node.state) {
+            expandMessageNode?.(node);
+          }
+        }}
+        renderNode={(nodeId, node) => {
+          if (node.state === MessageTreeNodeState.ADD) {
+            return <MdAdd className={styles.addNodeText} />;
+          } else if (node.state === MessageTreeNodeState.OPEN_CHAT) {
+            return (
+              <ChatForm
+                trueRoot={trueRoot}
+                node={node}
+                nodeId={nodeId}
+                setSubmitting={setSubmitting}
+                submitting={submitting}
+                sendMessage={sendMessage}
+                forceTreeUpdate={forceTreeUpdate}
+              />
+            );
+          } else if (node.message) {
+            return (
+              <div
+                className={clsx(styles.answeredNode, {
+                  [styles.queryOnly]: appearance === 'query-only',
+                })}
+              >
+                <p className={styles.chatNodeQuery}>{node.message.query}</p>
+                {appearance === 'full' && <p>{node.message.answer}</p>}
+              </div>
+            );
+          } else {
+            return <></>;
+          }
+        }}
+      />
+    );
+  }
+}
+
+interface ChatFormProps {
+  trueRoot: MessageTreeNode;
+
+  setSubmitting: (state: boolean) => void;
+
+  sendMessage?: (
+    nodes: Array<MessageTreeNode>,
+    input: string,
+    nodeId: NodeId,
+  ) => void;
+
+  forceTreeUpdate: () => void;
+
+  nodeId: NodeId;
+  node: MessageTreeNode;
+
+  submitting: boolean;
+}
+
+function ChatForm({
+  trueRoot,
+  nodeId,
+  setSubmitting,
+  sendMessage,
+  forceTreeUpdate,
+  node,
+  submitting,
+}: ChatFormProps): JSX.Element {
+  return (
+    <form
+      className={styles.chatForm}
+      onSubmit={async (event) => {
+        event.preventDefault();
+
+        let relevantNodes: Array<MessageTreeNode> = [],
+          nodes: Array<MessageTreeNode> = [trueRoot];
+
+        nodeId.forEach(({ position }) => {
+          const currentNode = nodes![position];
+
+          nodes = currentNode.children!;
+
+          relevantNodes.push(currentNode);
+        });
+
+        const input = new FormData(event.target as HTMLFormElement).get(
+          'input',
+        ) as string;
+
+        try {
+          setSubmitting(true);
+
+          await sendMessage?.(
+            relevantNodes.slice(0, -1),
+            input,
+            nodeId.slice(0, -1),
+          );
+        } finally {
+          setSubmitting(false);
         }
       }}
-      renderNode={(nodeId, node) => {
-        if (node.state === MessageTreeNodeState.ADD) {
-          return <MdAdd className={styles.addNodeText} />;
-        } else if (node.state === MessageTreeNodeState.OPEN_CHAT) {
-          console.log('open_chat', nodeId);
-          return (
-            <form
-              className={styles.chatForm}
-              onSubmit={async (event) => {
-                event.preventDefault();
+    >
+      <textarea name="input" rows={2} />
+      <button
+        className={styles.submitChatForm}
+        type="submit"
+        disabled={submitting}
+      >
+        <MdArrowUpward />
+      </button>
+      {nodeId.length > 0 && (
+        <button
+          className={styles.closeChatForm}
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            node.state = MessageTreeNodeState.ADD;
 
-                let relevantNodes: Array<MessageTreeNode> = [],
-                  nodes: Array<MessageTreeNode> = [trueRoot];
-
-                while (nodeId.length > 0) {
-                  const { position } = nodeId.shift()!;
-
-                  const currentNode = nodes![position];
-
-                  nodes = currentNode.children!;
-
-                  relevantNodes.push(currentNode);
-                }
-
-                const input = new FormData(event.target as HTMLFormElement).get(
-                  'input',
-                ) as string;
-
-                try {
-                  setSubmitting(true);
-
-                  await sendMessage?.(
-                    relevantNodes.slice(1, -1),
-                    input,
-                    nodeId.slice(1, -1),
-                  );
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-            >
-              <textarea name="input" rows={2} />
-              <button
-                className={styles.submitChatForm}
-                type="submit"
-                disabled={submitting}
-              >
-                <MdArrowUpward />
-              </button>
-              <button
-                className={styles.closeChatForm}
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  node.state = MessageTreeNodeState.ADD;
-
-                  forceTreeUpdate();
-                }}
-              >
-                <MdClose />
-              </button>
-            </form>
-          );
-        } else if (node.message) {
-          return (
-            <div
-              className={clsx(styles.answeredNode, {
-                [styles.queryOnly]: appearance === 'query-only',
-              })}
-            >
-              <p className={styles.chatNodeQuery}>{node.message.query}</p>
-              {appearance === 'full' && <p>{node.message.answer}</p>}
-            </div>
-          );
-        } else {
-          return <></>;
-        }
-      }}
-    />
+            forceTreeUpdate();
+          }}
+        >
+          <MdClose />
+        </button>
+      )}
+    </form>
   );
 }
