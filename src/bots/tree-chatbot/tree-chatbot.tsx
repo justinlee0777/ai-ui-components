@@ -1,6 +1,6 @@
 import styles from './tree-chatbot.module.css';
 
-import { JSX, useEffect, useMemo, useState } from 'react';
+import { type JSX, useEffect, useMemo, useState } from 'react';
 import { MdAdd, MdArrowUpward, MdClose } from 'react-icons/md';
 import cloneDeep from 'lodash-es/cloneDeep';
 

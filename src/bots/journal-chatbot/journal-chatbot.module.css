@@ -1,0 +1,24 @@
+.journalPage {
+  background-color: #f6eee3;
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  padding: 1em;
+  position: relative;
+  text-indent: 2em;
+  white-space: pre-wrap;
+}
+
+.border {
+  border-top: 1px dotted black;
+  margin: auto;
+  width: 60%;
+}
+
+.userMessage {
+}
+
+.aiMessage {
+}
