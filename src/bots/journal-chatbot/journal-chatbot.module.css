@@ -5,10 +5,14 @@
   display: flex;
   flex-direction: column;
   line-height: 1.5;
-  padding: 1em;
+  padding: 1em 1em 3em;
   position: relative;
   text-indent: 2em;
   white-space: pre-wrap;
+}
+
+.dateString {
+  text-align: center;
 }
 
 .border {
@@ -21,4 +25,27 @@
 }
 
 .aiMessage {
+}
+
+.chatForm {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: 1em;
+  justify-content: center;
+}
+
+.chatForm .submitChatForm {
+  background-color: transparent;
+  flex: none;
+}
+
+.userInput {
+  flex: 1;
+  resize: none;
+}
+
+.userInput:not(:focus) {
+  background-color: transparent;
 }

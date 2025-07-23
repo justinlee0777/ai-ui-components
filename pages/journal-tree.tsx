@@ -1,15 +1,20 @@
 import ReactDOM from 'react-dom/client';
 
-import { type JSX } from 'react';
+import { useState, type JSX } from 'react';
 import {
   JournalChatbot,
   JournalEntry,
+  JournalEntryMessage,
 } from '../src/bots/journal-chatbot/journal-chatbot';
+import getOpenAIApi from '../src/api/openai/openai-client';
+import { ChatCompletionMessageParam } from 'openai/resources/index';
 
 const root = ReactDOM.createRoot(document.body);
 
+// I think I need to include all the previous entries as well.
+
 function App(): JSX.Element {
-  const entries: Array<JournalEntry> = [
+  const originalEntries: Array<JournalEntry> = [
     {
       messages: [
         {
@@ -65,7 +70,65 @@ function App(): JSX.Element {
     },
   ];
 
-  return <JournalChatbot entries={entries} bindListenersToRoot />;
+  const [entries, setEntries] = useState<Array<JournalEntry>>(originalEntries);
+
+  return (
+    <JournalChatbot
+      entries={entries}
+      bindListenersToRoot
+      sendMessage={async (entry, input, entryIndex) => {
+        const openaiAPI = getOpenAIApi();
+
+        const userMessage: JournalEntryMessage = {
+          speaker: 'user',
+          content: input,
+        };
+
+        let messages = entry.messages
+          .map((message) => {
+            return {
+              role: message.speaker === 'ai' ? 'system' : 'user',
+              content: message.content,
+            } as ChatCompletionMessageParam;
+          })
+          .concat({
+            role: userMessage.speaker,
+            content: userMessage.content,
+          } as ChatCompletionMessageParam);
+
+        messages.unshift({
+          role: 'user',
+          content:
+            'Help me interpret my dreams. I accept the premise of dream-interpretation inherently.',
+        });
+
+        const response = await openaiAPI.chat.completions.stream({
+          messages,
+          model: 'gpt-4',
+        });
+
+        let finalMessage = '';
+
+        for await (const event of response) {
+          finalMessage += event.choices.at(0)!.delta.content ?? '';
+
+          const newEntry: JournalEntry = {
+            ...entry,
+            messages: entry.messages.concat(userMessage, {
+              speaker: 'ai',
+              content: finalMessage,
+            }),
+          };
+
+          setEntries([
+            ...entries.slice(0, entryIndex),
+            newEntry,
+            ...entries.slice(entryIndex + 1),
+          ]);
+        }
+      }}
+    />
+  );
 }
 
 root.render(<App />);
