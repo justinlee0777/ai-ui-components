@@ -75,6 +75,7 @@ function App(): JSX.Element {
   return (
     <JournalChatbot
       entries={entries}
+      enableClickEvents
       bindListenersToRoot
       sendMessage={async (entry, input, entryIndex) => {
         const openaiAPI = getOpenAIApi();
@@ -84,23 +85,19 @@ function App(): JSX.Element {
           content: input,
         };
 
-        let messages = entry.messages
-          .map((message) => {
-            return {
-              role: message.speaker === 'ai' ? 'system' : 'user',
-              content: message.content,
-            } as ChatCompletionMessageParam;
+        let messages = entries
+          .flatMap((entry) => {
+            return entry.messages.map((message) => {
+              return {
+                role: message.speaker === 'ai' ? 'system' : 'user',
+                content: message.content,
+              } as ChatCompletionMessageParam;
+            });
           })
           .concat({
             role: userMessage.speaker,
             content: userMessage.content,
           } as ChatCompletionMessageParam);
-
-        messages.unshift({
-          role: 'user',
-          content:
-            'Help me interpret my dreams. I accept the premise of dream-interpretation inherently.',
-        });
 
         const response = await openaiAPI.chat.completions.stream({
           messages,

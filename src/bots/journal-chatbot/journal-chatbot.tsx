@@ -10,7 +10,7 @@ import {
   useState,
   type JSX,
 } from 'react';
-import { MdArrowUpward, MdClose } from 'react-icons/md';
+import { MdArrowUpward, MdOutlineArrowLeft } from 'react-icons/md';
 
 export interface JournalEntryMessage {
   speaker: 'user' | 'ai';
@@ -28,6 +28,7 @@ export interface JournalEntry {
 export interface Props {
   bindListenersToRoot: boolean;
   entries: Array<JournalEntry>;
+  enableClickEvents: boolean;
 
   sendMessage?: (
     entry: JournalEntry,
@@ -38,6 +39,7 @@ export interface Props {
 
 export function JournalChatbot({
   bindListenersToRoot,
+  enableClickEvents,
   entries,
   sendMessage,
 }: Props): JSX.Element {
@@ -112,6 +114,14 @@ export function JournalChatbot({
     setCalculatedEntries(addBlankPage(entries));
   }, [entries, setCalculatedEntries, addBlankPage]);
 
+  const formatDate = useMemo(() => {
+    return (date: Date) => {
+      return `${date.getMonth().toString().padStart(2, '0')}/${date.getDay().toString().padStart(2, '0')}/${date.getFullYear()}`;
+    };
+  }, []);
+
+  const [sidePaneOpened, setSidePaneOpened] = useState(false);
+
   return (
     <div
       className={styles.journalPage}
@@ -121,11 +131,24 @@ export function JournalChatbot({
           ? (keyboardListener as unknown as KeyboardEventHandler)
           : undefined
       }
+      onClick={(event) => {
+        if (!enableClickEvents) {
+          return;
+        }
+
+        const eventTarget = event.target as HTMLElement;
+
+        const { x, width } = eventTarget.getBoundingClientRect();
+        const midpoint = x + width / 2;
+        if (event.clientX >= midpoint) {
+          goToNextPage();
+        } else {
+          goToPreviousPage();
+        }
+      }}
     >
       {currentEntry.date && (
-        <p className={styles.dateString}>
-          {`${currentEntry.date.getMonth().toString().padStart(2, '0')}/${currentEntry.date.getDay().toString().padStart(2, '0')}/${currentEntry.date.getFullYear()}`}
-        </p>
+        <p className={styles.dateString}>{formatDate(currentEntry.date)}</p>
       )}
       {currentEntry.messages.flatMap(({ speaker, content }, i) => {
         return (
@@ -144,11 +167,40 @@ export function JournalChatbot({
           </Fragment>
         );
       })}
-      <ChatForm
-        sendMessage={async (input) => {
-          await sendMessage?.(currentEntry, input, currentEntryIndex);
+      {currentEntryIndex > calculatedEntries.length - 3 && (
+        <ChatForm
+          sendMessage={async (input) => {
+            await sendMessage?.(currentEntry, input, currentEntryIndex);
+          }}
+        />
+      )}
+      <div
+        className={clsx(styles.sidePane, {
+          [styles.sidePaneOpened]: sidePaneOpened,
+        })}
+        onClick={(event) => {
+          event.stopPropagation();
+          setSidePaneOpened((state) => !state);
         }}
-      />
+      >
+        {calculatedEntries.map((entry, i) => {
+          return (
+            <button
+              key={i}
+              onClick={(event) => {
+                event.stopPropagation();
+                setCurrentEntryIndex(i);
+                setSidePaneOpened(false);
+              }}
+            >
+              {entry.date ? formatDate(entry.date) : '-'}
+            </button>
+          );
+        })}
+        <button className={styles.openPane}>
+          <MdOutlineArrowLeft />
+        </button>
+      </div>
     </div>
   );
 }
@@ -189,11 +241,13 @@ function ChatForm({ sendMessage }: ChatFormProps): JSX.Element {
         name="input"
         rows={5}
         ref={inputRef}
+        onClick={(event) => event.stopPropagation()}
       />
       <button
         className={styles.submitChatForm}
         type="submit"
         disabled={submitting}
+        onClick={(event) => event.stopPropagation()}
       >
         <MdArrowUpward />
       </button>
