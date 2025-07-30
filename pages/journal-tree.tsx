@@ -11,8 +11,6 @@ import { ChatCompletionMessageParam } from 'openai/resources/index';
 
 const root = ReactDOM.createRoot(document.body);
 
-// I think I need to include all the previous entries as well.
-
 function App(): JSX.Element {
   const originalEntries: Array<JournalEntry> = [
     {

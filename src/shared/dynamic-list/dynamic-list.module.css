@@ -1,0 +1,12 @@
+.dynamicList {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.dynamicListRow {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}

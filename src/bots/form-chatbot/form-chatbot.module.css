@@ -1,0 +1,12 @@
+.promptTemplateForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.generatedPrompt {
+  border: 1px solid black;
+  box-sizing: border-box;
+  padding: 1em;
+  white-space: pre-line;
+}
