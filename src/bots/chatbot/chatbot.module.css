@@ -1,0 +1,44 @@
+.chatbot {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  position: relative;
+}
+
+.message {
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.message p {
+  margin: 0;
+}
+
+.userMessage {
+  background-color: #f1f1f1;
+  border-radius: 4px;
+  justify-self: flex-end;
+  max-width: 66%;
+  padding: 0.5em;
+}
+
+.userInputContainer {
+  align-items: center;
+  bottom: 1em;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  margin-top: auto;
+  padding-top: 3em;
+  position: sticky;
+}
+
+.userInputContainer textarea {
+  flex: 1;
+}
+
+.submitChat {
+  background-color: transparent;
+  flex: none;
+}
