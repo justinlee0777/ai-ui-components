@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 1em;
+  overflow-x: hidden;
   position: relative;
 }
 
@@ -27,7 +28,7 @@
   align-items: center;
   bottom: 1em;
   display: flex;
-  flex-direction: row;
+  flex-flow: row wrap;
   gap: 1em;
   margin-top: auto;
   padding-top: 3em;
@@ -36,6 +37,54 @@
 
 .userInputContainer textarea {
   flex: 1;
+}
+
+.queryList {
+  background-color: white;
+  border: 1px solid black;
+  bottom: 0;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.queryList > button {
+  background-color: transparent;
+  border: none;
+  box-sizing: border-box;
+  flex: 0 0 40%;
+  overflow-x: hidden;
+  padding: 1em 0.5em 2em;
+  text-overflow: ellipsis;
+  transition: 0.15s background-color;
+  white-space: nowrap;
+}
+
+.queryList > button:hover {
+  background-color: rgba(175, 175, 175, 0.3);
+}
+
+.chatList {
+  align-self: flex-start;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  flex: none;
+  height: 2em;
+  line-height: 2em;
+  min-width: 0;
+  position: sticky;
+  right: 0.5em;
+  top: 0.5em;
+  transition: 0.15s background-color;
+  vertical-align: middle;
+  width: 2em;
+}
+
+.chatList:hover {
+  background-color: rgba(175, 175, 175, 0.3);
 }
 
 .submitChat {

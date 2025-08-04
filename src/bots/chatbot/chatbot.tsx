@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import styles from './chatbot.module.css';
 
 import { JSX, useRef, useState } from 'react';
-import { MdArrowUpward } from 'react-icons/md';
+import { MdArrowUpward, MdList } from 'react-icons/md';
 
 export interface ChatbotMessage {
   speaker: 'ai' | 'human';
@@ -21,12 +21,17 @@ export function Chatbot({
   messages,
   sendMessage,
 }: Props): JSX.Element {
+  const messageRefs = useRef<Array<HTMLDivElement>>([]);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [submitting, setSubmitting] = useState(false);
 
   return (
     <div className={clsx(styles.chatbot, className)}>
-      {messages.map(({ speaker, content }) => {
+      <button className={styles.chatList}>
+        <MdList />
+      </button>
+      {messages.map(({ speaker, content }, i) => {
         let messageContent: JSX.Element;
         switch (speaker) {
           case 'ai':
@@ -37,7 +42,21 @@ export function Chatbot({
             break;
         }
 
-        return <div className={styles.message}>{messageContent}</div>;
+        return (
+          <div
+            key={i}
+            className={styles.message}
+            ref={(el) => {
+              if (el) {
+                messageRefs.current[i] = el;
+              } else {
+                delete messageRefs.current[i];
+              }
+            }}
+          >
+            {messageContent}
+          </div>
+        );
       })}
       <form
         className={styles.userInputContainer}
@@ -70,6 +89,28 @@ export function Chatbot({
         >
           <MdArrowUpward />
         </button>
+        <div className={styles.queryList}>
+          {messages.map((message, i) => {
+            if (message.speaker === 'human') {
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  title={message.content}
+                  onClick={(event) => {
+                    event.preventDefault();
+
+                    messageRefs.current[i].scrollIntoView({
+                      behavior: 'smooth',
+                    });
+                  }}
+                >
+                  {message.content}
+                </button>
+              );
+            }
+          })}
+        </div>
       </form>
     </div>
   );
