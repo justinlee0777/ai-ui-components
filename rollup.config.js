@@ -34,7 +34,13 @@ mkdirSync(dir);
 writeFileSync(`${dir}/package.json`, JSON.stringify(pkg, null, 2));
 copyFileSync('LICENSE', `${dir}/LICENSE`);
 
-const exports = ['src/Tree.ts', 'src/TreeChatbot.ts'];
+const exports = [
+  'src/Chatbot.ts',
+  'src/FormChatbot.ts',
+  'src/JournalChatbot.ts',
+  'src/Tree.ts',
+  'src/TreeChatbot.ts',
+];
 
 const input = exports.reduce((acc, value) => {
   const [, entryName] = value.split(/\/|\./);
