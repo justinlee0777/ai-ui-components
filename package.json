@@ -1,7 +1,7 @@
 {
   "name": "ai-ui-components",
   "type": "module",
-  "version": "0.0.0-beta.4",
+  "version": "0.0.0-beta.5",
   "sideEffects": true,
   "scripts": {
     "start": "vite --config ./vite.config.dev.js",

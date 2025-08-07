@@ -10,11 +10,16 @@ const format = 'esm';
 const output = {
   dir,
   format,
+  preserveModules: true,
+  sourcemap: true,
 };
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf-8' }));
 
-const externalPackages = [...Object.keys(pkg.peerDependencies || {})];
+const externalPackages = [
+  ...Object.keys(pkg.dependencies || {}),
+  ...Object.keys(pkg.peerDependencies || {}),
+];
 
 delete pkg.devDependencies;
 
@@ -53,13 +58,12 @@ export default [
     input,
     output: {
       ...output,
-      preserveModules: true,
     },
     plugins: [
-      commonjs(),
       nodeResolve({
         moduleDirectories: ['node_modules'],
       }),
+      commonjs(),
       typescript({
         tsconfig: 'tsconfig.prod.json',
       }),
