@@ -1,7 +1,8 @@
 {
   "name": "ai-ui-components",
   "type": "module",
-  "version": "0.0.0-beta.3",
+  "version": "0.0.0-beta.4",
+  "sideEffects": true,
   "scripts": {
     "start": "vite --config ./vite.config.dev.js",
     "build": "rm -rf dist && rollup -c",

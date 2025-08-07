@@ -14,10 +14,7 @@ const output = {
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf-8' }));
 
-const externalPackages = [
-  ...Object.keys(pkg.dependencies || {}),
-  ...Object.keys(pkg.peerDependencies || {}),
-];
+const externalPackages = [...Object.keys(pkg.peerDependencies || {})];
 
 delete pkg.devDependencies;
 
