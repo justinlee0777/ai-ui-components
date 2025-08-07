@@ -30,6 +30,7 @@ export interface Props {
   entries: Array<JournalEntry>;
   enableClickEvents: boolean;
 
+  className?: string;
   sendMessage?: (
     entry: JournalEntry,
     input: string,
@@ -41,6 +42,7 @@ export function JournalChatbot({
   bindListenersToRoot,
   enableClickEvents,
   entries,
+  className,
   sendMessage,
 }: Props): JSX.Element {
   const addBlankPage = useMemo(() => {
@@ -116,7 +118,7 @@ export function JournalChatbot({
 
   const formatDate = useMemo(() => {
     return (date: Date) => {
-      return `${date.getMonth().toString().padStart(2, '0')}/${date.getDay().toString().padStart(2, '0')}/${date.getFullYear()}`;
+      return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
     };
   }, []);
 
@@ -124,7 +126,7 @@ export function JournalChatbot({
 
   return (
     <div
-      className={styles.journalPage}
+      className={clsx(styles.journalPage, className)}
       tabIndex={0}
       onKeyDown={
         !bindListenersToRoot

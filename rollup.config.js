@@ -10,7 +10,7 @@ const format = 'esm';
 const output = {
   dir,
   format,
-  preserveModules: true,
+  // reserveModules: true,
   sourcemap: true,
 };
 
